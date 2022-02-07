@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FlatList, Keyboard, Alert, LogBox } from 'react-native';
+import { FlatList, Keyboard, Alert, LogBox, ActivityIndicator } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import firebase from '../../services/firebaseConnection';
-import BouncyCheckbox from "react-native-bouncy-checkbox";
 
 import {
-    Container, Header, InfoHeader, NumberItemList, ContentNoItem, TextNoItem, BoxItemList, ContenInfoList, NameItemList, BoxClose,
-    ContentNewItem, InputNewItem, AddNewItem,
+    Container, Header, InfoHeader, NumberItemList, ContentNoItem, TextNoItem, BoxItemList, ContenInfoList, ContentCheck, BoxEditName, NameItemList, BoxClose,
+    ContentNewItem, InputNewItem, AddNewItem, ContainerLoading,
 } from './styles';
 
 import Colors from '../../../constants/Colors';
@@ -16,10 +15,12 @@ const List = () => {
     const [nameItem, setNameItem] = useState('');
     const [key, setKey] = useState('');
     const [status, setStatus] = useState(false);
-    const [checkboxState, setCheckboxState] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [check, setCheck] = useState('');
+
+    const [itens, setItens] = useState([]);
 
     const inputRef = useRef(null);
-    const [itens, setItens] = useState([]);
 
     LogBox.ignoreLogs(['Setting a timer']);
 
@@ -37,11 +38,18 @@ const List = () => {
 
                     setItens(oldArray => [...oldArray, data].reverse());
                 })
+
+                setLoading(false);
             })
         }
 
         dados();
     }, []);
+
+    useEffect(() => {
+        const filter = itens.map(item => item.status).filter(a => a === true).length
+        setCheck(filter);
+    }, [handleStatus])
 
     async function handleCreate() {
         if (nameItem == '') {
@@ -50,7 +58,7 @@ const List = () => {
 
         if (key !== '') {
             firebase.database().ref('itens').child(key).update({
-                nameItem: nameItem
+                nomeItem: nameItem
             })
                 .then(() => {
                     console.log('tarefa atualizada')
@@ -82,7 +90,6 @@ const List = () => {
                 {
                     text: "Sim",
                     onPress: () => {
-
                         firebase.database().ref('itens').child(key).remove()
                             .then(() => {
                                 const findItens = itens.filter(item => item.key != key)
@@ -99,7 +106,21 @@ const List = () => {
     }
 
     function handleStatus(data) {
-        console.log(data)
+        if (data.status == true) {
+            firebase.database().ref('itens').child(data.key).update({
+                status: false
+            })
+                .then(() => {
+                    console.log('status atualizado')
+                })
+        } else {
+            firebase.database().ref('itens').child(data.key).update({
+                status: true
+            })
+                .then(() => {
+                    console.log('status atualizado')
+                })
+        }
     }
 
     function handleEdit(data) {
@@ -108,25 +129,28 @@ const List = () => {
         inputRef.current.focus();
     }
 
-    function Listagem({ data, deleteItem, editItem }) {
+    function Listagem({ data, deleteItem, editItem, statusItem }) {
         return (
             <BoxItemList>
-                <ContenInfoList onPress={() => editItem(data)}>
-                    <BouncyCheckbox
-                        size={20}
-                        fillColor={ColorTheme.Green}
-                        unfillColor={ColorTheme.White}
-                        iconStyle={{ borderColor: ColorTheme.Gray }}
-                        onPress={() => setCheckboxState(!checkboxState)}
-                        isChecked={checkboxState}
-                    />
-                    <NameItemList>{data.nomeItem}</NameItemList>
+                <ContenInfoList>
+                    {data.status == true ? (
+                        <ContentCheck onPress={() => statusItem(data)}>
+                            <MaterialCommunityIcons name="check-box-outline" color={ColorTheme.Green} size={18} />
+                        </ContentCheck>
+                    ) : (
+                        <ContentCheck onPress={() => statusItem(data)}>
+                            <MaterialCommunityIcons name="checkbox-blank" color={ColorTheme.Gray} size={18} />
+                        </ContentCheck>
+                    )}
+                    <BoxEditName onPress={() => editItem(data)} >
+                        <NameItemList>{data.nomeItem}</NameItemList>
+                    </BoxEditName>
                 </ContenInfoList>
 
                 <BoxClose onPress={() => deleteItem(data.key)}>
                     <MaterialCommunityIcons name="close" color={ColorTheme.White} size={9} />
                 </BoxClose>
-            </BoxItemList>
+            </BoxItemList >
         )
     }
 
@@ -134,24 +158,34 @@ const List = () => {
         <Container>
             <Header>
                 <InfoHeader>Lista de compras</InfoHeader>
-                {itens.length !== 0 ? (<NumberItemList>{itens.length}</NumberItemList>) : (null)}
+                {itens.length !== 0 ? (<NumberItemList>{check} / {itens.length}</NumberItemList>) : (null)}
             </Header>
-
-            {itens.length !== 0 ? (
-                <>
-                    <FlatList
-                        keyExtractor={item => item.key}
-                        data={itens}
-                        renderItem={({ item }) => (
-                            <Listagem data={item} statusItem={handleStatus} deleteItem={handleDelete} editItem={handleEdit} />
-                        )}
-                    />
-                </>
-            ) : (
-                <ContentNoItem>
-                    <TextNoItem>Nenhum item na lista</TextNoItem>
-                </ContentNoItem>
-            )}
+            {loading ? (
+                <ContainerLoading>
+                    <ActivityIndicator size={50} color={ColorTheme.Blue} />
+                </ContainerLoading>
+            )
+                : (
+                    <>
+                        {itens.length !== 0 ? (
+                            <>
+                                <FlatList
+                                    keyExtractor={item => item.key}
+                                    data={itens}
+                                    renderItem={({ item }) => (
+                                        <Listagem data={item} statusItem={handleStatus} deleteItem={handleDelete} editItem={handleEdit} />
+                                    )}
+                                />
+                            </>
+                        ) : (
+                            <ContentNoItem>
+                                <TextNoItem>Nenhum item na lista</TextNoItem>
+                            </ContentNoItem>
+                        )
+                        }
+                    </>
+                )
+            }
 
             <ContentNewItem>
                 <InputNewItem

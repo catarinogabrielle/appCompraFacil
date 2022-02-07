@@ -45,15 +45,24 @@ padding: 19px 12px;
 margin: 10px 7px 0;
 `;
 
-export const ContenInfoList = styled.TouchableOpacity`
+export const ContenInfoList = styled.View`
 flex-direction: row;
+align-items: center;
+`;
+
+export const ContentCheck = styled.TouchableOpacity`
+align-items: center;
+width: 24px;
+margin: 0 10px 0 0;
+`;
+
+export const BoxEditName = styled.TouchableOpacity`
 align-items: center;
 `;
 
 export const NameItemList = styled.Text`
 font-size: 16px;
 color: ${ColorTheme.Gray};
-margin-left: 10px;
 `;
 
 export const BoxClose = styled.TouchableOpacity`
@@ -90,6 +99,12 @@ border: 1px solid ${ColorTheme.Gray2};
 padding: 10px 22px;
 font-size: 16px;
 border-radius: 5px;
+align-items: center;
+justify-content: center;
+`;
+
+export const ContainerLoading = styled.View`
+flex: 1;
 align-items: center;
 justify-content: center;
 `;
