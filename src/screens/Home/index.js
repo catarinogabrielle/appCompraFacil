@@ -17,7 +17,6 @@ const List = () => {
     const [status, setStatus] = useState(false);
     const [loading, setLoading] = useState(true);
     const [check, setCheck] = useState('');
-
     const [itens, setItens] = useState([]);
 
     const inputRef = useRef(null);
